@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>我的Hustle - 积分中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 40px;
+        }
+        .container { max-width: 500px; margin: 0 auto; }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            color: white;
+        }
+        .header h1 { font-size: 28px; letter-spacing: 2px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.8; }
+
+        .points-card {
+            background: linear-gradient(135deg, #f0c413 0%, #e0a800 100%);
+            border-radius: 32px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .points-label {
+            font-size: 14px;
+            color: #1a1a2e;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        .points-value {
+            font-size: 56px;
+            font-weight: bold;
+            color: #1a1a2e;
+        }
+        .points-unit {
+            font-size: 18px;
+            color: #1a1a2e;
+            margin-left: 5px;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: #666; font-size: 14px; }
+        .info-value { font-weight: 600; color: #333; font-size: 14px; }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0c413;
+        }
+
+        .record-item {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+        .record-change {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .change-add { color: #28a745; font-weight: bold; }
+        .change-reduce { color: #dc3545; font-weight: bold; }
+        .record-reason { font-size: 13px; color: #666; margin-bottom: 6px; }
+        .record-time { font-size: 11px; color: #999; }
+        .record-operator { font-size: 11px; color: #999; margin-top: 4px; }
+
+        .card-item, .wine-item {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border-left: 4px solid #f0c413;
+        }
+        .card-title, .wine-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-detail, .wine-detail {
+            font-size: 13px;
+            color: #666;
+            margin-top: 6px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-active { background: #e8f5e9; color: #28a745; }
+        .badge-stored { background: #e3f2fd; color: #2196f3; }
+        .badge-warning { background: #fff3e0; color: #ff9800; }
+        /* 排行榜样式 - 添加到 .badge-warning 后面 */
+        .rank-tab {
+            flex: 1;
+            padding: 10px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .rank-tab.active {
+            background: #f0c413;
+            color: #1a1a2e;
+        }
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .rank-number {
+            width: 45px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .rank-name {
+            flex: 1;
+            font-size: 14px;
+        }
+        .rank-value {
+            font-weight: bold;
+            color: #f0c413;
+            font-size: 14px;
+        }
+        .sng-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+        }
+        .sng-stats span {
+            font-weight: 500;
+        }
+        .rank-top-1 .rank-number { color: #ffd700; font-size: 18px; }
+        .rank-top-2 .rank-number { color: #c0c0c0; font-size: 18px; }
+        .rank-top-3 .rank-number { color: #cd7f32; font-size: 18px; }
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+            font-size: 14px;
+        }
+
+        .btn-logout {
+            width: 100%;
+            padding: 14px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 16px;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .btn-logout:active { background: rgba(255,255,255,0.3); }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+        }
+
+        .refresh-hint {
+            text-align: center;
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            margin-top: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🥃 HUSTLE BAR</h1>
+            <p>会员积分中心</p>
+        </div>
+
+        <!-- 积分卡片 -->
+        <div class="points-card">
+            <div class="points-label">⭐ 我的积分</div>
+            <div class="points-value">{{ customer.points }}<span class="points-unit">分</span></div>
+        </div>
+
+        <!-- 我的酒卡 -->
+        <div class="info-card">
+            <div class="section-title">
+                <span>🎫</span> 我的酒卡
+            </div>
+            <div id="winecardList">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 我的存酒 -->
+        <div class="info-card">
+            <div class="section-title">
+                <span>🍾</span> 我的存酒
+            </div>
+            <div id="storedwineList">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 排行榜选项卡 -->
+        <div class="info-card">
+            <div class="section-title">
+                <span>📊</span> 排行榜
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button id="pointsRankBtn" class="rank-tab active" onclick="showRankTab('points')">🏆 积分排行</button>
+                <button id="sngRankBtn" class="rank-tab" onclick="showRankTab('sng')">🥇 SNG排行</button>
+            </div>
+            <div id="pointsRankList">
+                <div class="loading">加载中...</div>
+            </div>
+            <div id="sngRankList" style="display: none;">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="info-card">
+            <div class="info-row">
+                <span class="info-label">📇 姓名</span>
+                <span class="info-value">{{ customer.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📱 手机尾号</span>
+                <span class="info-value">{{ customer.phone_tail }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">💰 累计消费</span>
+                <span class="info-value">¥{{ "%.2f"|format(customer.total_consumption) }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">📅 注册日期</span>
+                <span class="info-value">{{ customer.register_time.strftime('%Y-%m-%d') }}</span>
+            </div>
+        </div>
+
+        <!-- 积分记录 -->
+        <div class="info-card">
+            <div class="section-title">
+                <span>📋</span> 最近积分记录
+            </div>
+            <div id="recordsList">
+                <div class="loading">加载中...</div>
+            </div>
+        </div>
+
+
+        <button class="btn-logout" onclick="logout()">🚪 退出登录</button>
+        <div class="footer">Hustle Bar · 感谢您的支持</div>
+        <div class="refresh-hint">数据自动刷新 | 如有疑问请咨询工作人员</div>
+    </div>
+
+    <script>
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                window.location.href = '/logout';
+            }
+        }
+
+        // 加载积分记录
+        async function loadRecords() {
+            try {
+                const res = await fetch('/api/user/records');
+                const data = await res.json();
+                const container = document.getElementById('recordsList');
+
+                if (!data.records || data.records.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无积分记录</div>';
+                } else {
+                    container.innerHTML = data.records.map(r => `
+                        <div class="record-item">
+                            <div class="record-change">
+                                <span class="${r.change_type === '增加积分' ? 'change-add' : 'change-reduce'}">
+                                    ${r.change_type === '增加积分' ? '➕' : '➖'} ${r.points_change} 分
+                                </span>
+                                <span style="font-size:12px; color:#666;">${r.record_time}</span>
+                            </div>
+                            <div class="record-reason">📝 ${r.reason || '无说明'}</div>
+                            <div class="record-operator">👤 操作人: ${r.operator || '系统'}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('recordsList').innerHTML = '<div class="empty-state">加载失败，请稍后重试</div>';
+                console.error(e);
+            }
+        }
+
+        // 加载酒卡
+        async function loadWineCards() {
+            try {
+                const res = await fetch('/api/user/winecards');
+                const data = await res.json();
+                const container = document.getElementById('winecardList');
+
+                if (!data.cards || data.cards.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无酒卡</div>';
+                } else {
+                    container.innerHTML = data.cards.map(c => `
+                        <div class="card-item">
+                            <div class="card-title">
+                                <span>🎫</span> ${escapeHtml(c.card_type)}
+                                <span class="badge badge-active" style="margin-left:auto;">有效</span>
+                            </div>
+                            <div class="card-detail">
+                                📦 数量: ${c.quantity}张
+                                ${c.card_number ? `<br>🔖 编号: ${escapeHtml(c.card_number)}` : ''}
+                                ${c.expiry_date ? `<br>⏰ 有效期至: ${c.expiry_date}` : ''}
+                                <br>📅 存储时间: ${c.store_date}
+                                <br>👤 经办人: ${c.operator || '系统'}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('winecardList').innerHTML = '<div class="empty-state">加载失败，请稍后重试</div>';
+                console.error(e);
+            }
+        }
+
+        // 加载存酒
+        async function loadStoredWines() {
+            try {
+                const res = await fetch('/api/user/storedwines');
+                const data = await res.json();
+                const container = document.getElementById('storedwineList');
+
+                if (!data.wines || data.wines.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无存酒</div>';
+                } else {
+                    container.innerHTML = data.wines.map(w => `
+                        <div class="wine-item">
+                            <div class="wine-title">
+                                <span>🍾</span> ${escapeHtml(w.wine_name)}
+                                <span class="badge badge-stored" style="margin-left:auto;">存储中</span>
+                            </div>
+                            <div class="wine-detail">
+                                📦 数量: ${w.quantity}瓶
+                                ${w.expected_pickup_date ? `<br>📅 预计取酒: ${w.expected_pickup_date}` : ''}
+                                <br>📅 存酒时间: ${w.store_date}
+                                <br>👤 经办人: ${w.operator || '系统'}
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch(e) {
+                document.getElementById('storedwineList').innerHTML = '<div class="empty-state">加载失败，请稍后重试</div>';
+                console.error(e);
+            }
+        }
+
+        // 防XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        // ========== 排行榜功能 ==========
+
+        // 获取排名样式
+        function getRankClass(index) {
+            if (index === 0) return 'rank-top-1';
+            if (index === 1) return 'rank-top-2';
+            if (index === 2) return 'rank-top-3';
+            return '';
+        }
+
+        // 加载积分排行榜
+        async function loadPointsRanking() {
+            try {
+                const res = await fetch('/api/rankings/points');
+                const rankings = await res.json();
+                const container = document.getElementById('pointsRankList');
+
+                if (!rankings || rankings.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无数据</div>';
+                    return;
+                }
+
+                container.innerHTML = rankings.slice(0, 10).map((r, idx) => `
+                    <div class="rank-item ${getRankClass(idx)}">
+                        <div class="rank-number">${idx + 1}</div>
+                        <div class="rank-name">${escapeHtml(r.name)}</div>
+                        <div class="rank-value">${r.points} 分</div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('pointsRankList').innerHTML = '<div class="empty-state">加载失败</div>';
+                console.error(e);
+            }
+        }
+
+        // 加载SNG排行榜
+        async function loadSNGRanking() {
+            try {
+                const res = await fetch('/api/rankings/sng');
+                const rankings = await res.json();
+                const container = document.getElementById('sngRankList');
+
+                if (!rankings || rankings.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无数据</div>';
+                    return;
+                }
+
+                container.innerHTML = rankings.slice(0, 10).map((r, idx) => `
+                    <div class="rank-item ${getRankClass(idx)}">
+                        <div class="rank-number">${idx + 1}</div>
+                        <div class="rank-name">${escapeHtml(r.name)}</div>
+                        <div class="sng-stats">
+                            <span>🏆 ${r.champion_count}</span>
+                            <span>🥈 ${r.runner_up_count}</span>
+                            <span>🥉 ${r.third_place_count}</span>
+                            <span>📊 ${r.total_count}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                document.getElementById('sngRankList').innerHTML = '<div class="empty-state">加载失败</div>';
+                console.error(e);
+            }
+        }
+
+        // 切换排行榜标签
+        function showRankTab(tab) {
+            const pointsBtn = document.getElementById('pointsRankBtn');
+            const sngBtn = document.getElementById('sngRankBtn');
+            const pointsDiv = document.getElementById('pointsRankList');
+            const sngDiv = document.getElementById('sngRankList');
+
+            if (tab === 'points') {
+                pointsBtn.classList.add('active');
+                sngBtn.classList.remove('active');
+                pointsDiv.style.display = 'block';
+                sngDiv.style.display = 'none';
+            } else {
+                pointsBtn.classList.remove('active');
+                sngBtn.classList.add('active');
+                pointsDiv.style.display = 'none';
+                sngDiv.style.display = 'block';
+            }
+        }
+        // 页面加载时执行
+        async function init() {
+            await loadRecords();
+            await loadWineCards();
+            await loadStoredWines();
+            await loadPointsRanking();
+            await loadSNGRanking();
+        }
+
+        init();
+
+        // 每30秒自动刷新积分显示（只刷新积分数字，不刷新整个页面）
+        async function refreshPoints() {
+            try {
+                const res = await fetch('/api/user/points');
+                const data = await res.json();
+                if (data.points !== undefined) {
+                    document.querySelector('.points-value').innerHTML = data.points + '<span class="points-unit">分</span>';
+                }
+            } catch(e) {
+                console.error('刷新积分失败', e);
+            }
+        }
+
+        // 每30秒刷新积分
+        setInterval(refreshPoints, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Hustle Bar - 后台管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #f5f5f5; padding-bottom: 65px; }
+        .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: white; padding: 16px; text-align: center; position: sticky; top: 0; z-index: 10; }
+        .header h1 { font-size: 18px; letter-spacing: 2px; }
+        .header p { font-size: 11px; opacity: 0.9; margin-top: 4px; }
+        .logout-btn { position: absolute; right: 16px; top: 16px; background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; }
+        .logout-btn:active { background: rgba(255,255,255,0.3); }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; }
+        .menu-card { background: white; border-radius: 16px; padding: 16px 12px; text-align: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: 0.1s; }
+        .menu-card:active { transform: scale(0.96); background: #f0f0f0; }
+        .menu-icon { font-size: 36px; margin-bottom: 8px; }
+        .menu-title { font-size: 15px; font-weight: 600; color: #333; }
+        .menu-desc { font-size: 11px; color: #999; margin-top: 4px; }
+        .stats { background: white; margin: 0 16px 16px 16px; padding: 14px; border-radius: 16px; display: flex; justify-content: space-around; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .stat-item { text-align: center; }
+        .stat-number { font-size: 22px; font-weight: bold; color: #f0c413; }
+        .stat-label { font-size: 11px; color: #666; margin-top: 4px; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 8px 0; border-top: 1px solid #eee; overflow-x: auto; }
+        .nav-item { text-align: center; flex: 1; cursor: pointer; padding: 4px 0; min-width: 60px; }
+        .nav-item:active { background: #f0f0f0; }
+        .nav-icon { font-size: 20px; }
+        .nav-label { font-size: 10px; color: #666; margin-top: 2px; }
+        .container { padding: 16px; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+        .search-bar input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        .btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer; }
+        .btn-primary { background: #f0c413; color: #1a1a2e; font-weight: bold; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-block { width: 100%; margin-bottom: 8px; }
+        .flex { display: flex; gap: 8px; margin-top: 8px; }
+        .flex-1 { flex: 1; }
+        .text-center { text-align: center; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+        .modal-content { background: white; margin: 20px; border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; }
+        .modal-content input, .modal-content textarea, .modal-content select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-size: 14px; }
+        .badge-points { color: #28a745; font-weight: bold; }
+        .customer-name { font-weight: 600; font-size: 16px; }
+        .customer-phone { font-size: 13px; color: #666; margin-top: 2px; }
+        .ranking-table { width: 100%; }
+        .ranking-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .ranking-rank { width: 40px; font-weight: bold; }
+        .ranking-name { flex: 1; }
+        .ranking-value { font-weight: bold; color: #f0c413; }
+        .sng-stats { display: flex; gap: 12px; font-size: 12px; }
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 10px; background: #f0f0f0; border: none; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; }
+        .tab-btn.active { background: #f0c413; color: #1a1a2e; }
+        .rank-icon { font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🥃 HUSTLE BAR · 后台管理系统</h1>
+        <p>管理员专用 | 数据实时同步</p>
+        <div class="logout-btn" onclick="logout()">🚪 退出登录</div>
+    </div>
+
+    <!-- 首页 -->
+    <div id="homePage" class="page active">
+        <div class="stats" id="statsArea">
+            <div class="stat-item"><div class="stat-number" id="customerCount">-</div><div class="stat-label">客户数</div></div>
+            <div class="stat-item"><div class="stat-number" id="wineCount">-</div><div class="stat-label">酒水种类</div></div>
+            <div class="stat-item"><div class="stat-number" id="totalPoints">-</div><div class="stat-label">总积分</div></div>
+        </div>
+        <div class="menu-grid">
+            <div class="menu-card" onclick="showPage('customersPage')"><div class="menu-icon">👥</div><div class="menu-title">客户管理</div><div class="menu-desc">查询/添加/编辑/删除</div></div>
+            <div class="menu-card" onclick="showPage('pointsPage')"><div class="menu-icon">⭐</div><div class="menu-title">积分管理</div><div class="menu-desc">增加/减少积分</div></div>
+            <div class="menu-card" onclick="showPage('winecardPage')"><div class="menu-icon">🎫</div><div class="menu-title">酒卡管理</div><div class="menu-desc">存储/使用酒卡</div></div>
+            <div class="menu-card" onclick="showPage('storedwinePage')"><div class="menu-icon">🍾</div><div class="menu-title">存酒管理</div><div class="menu-desc">存酒/取酒记录</div></div>
+            <div class="menu-card" onclick="showPage('consumptionPage')"><div class="menu-icon">🍷</div><div class="menu-title">记录消费</div><div class="menu-desc">买酒自动积分</div></div>
+            <div class="menu-card" onclick="showPage('winesPage')"><div class="menu-icon">🍾</div><div class="menu-title">酒水管理</div><div class="menu-desc">添加/修改酒水</div></div>
+            <div class="menu-card" onclick="showPage('recordsPage')"><div class="menu-icon">📋</div><div class="menu-title">消费记录</div><div class="menu-desc">查看历史记录</div></div>
+            <div class="menu-card" onclick="showPage('sngPage')"><div class="menu-icon">🏆</div><div class="menu-title">SNG排名</div><div class="menu-desc">记录冠亚季军</div></div>
+            <div class="menu-card" onclick="showPage('rankingsPage')"><div class="menu-icon">📊</div><div class="menu-title">排行榜</div><div class="menu-desc">积分/SNG排行</div></div>
+        </div>
+    </div>
+
+    <!-- 客户管理页面 -->
+    <div id="customersPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">👥 客户管理</h2>
+            <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 输入姓名或手机尾号"><button class="btn btn-primary" onclick="searchCustomers()">搜索</button></div>
+            <button class="btn btn-success btn-block" onclick="showModal('addCustomerModal')">➕ 添加新客户</button>
+            <div id="customerList"></div>
+        </div>
+    </div>
+
+    <!-- 积分管理页面 -->
+    <div id="pointsPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">⭐ 积分管理</h2>
+            <div class="search-bar"><input type="text" id="pointsSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchPointsCustomers()">搜索</button></div>
+            <div id="pointsCustomerList"></div>
+        </div>
+    </div>
+
+    <!-- 酒卡管理页面 -->
+    <div id="winecardPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">🎫 酒卡管理</h2>
+            <div class="search-bar"><input type="text" id="cardSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchCardCustomers()">搜索</button></div>
+            <div id="winecardCustomerList"></div>
+        </div>
+    </div>
+
+    <!-- 存酒管理页面 -->
+    <div id="storedwinePage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">🍾 存酒管理</h2>
+            <div class="search-bar"><input type="text" id="storedSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchStoredCustomers()">搜索</button></div>
+            <div id="storedwineCustomerList"></div>
+        </div>
+    </div>
+
+    <!-- 记录消费页面 -->
+    <div id="consumptionPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">🍷 记录消费</h2>
+            <div class="search-bar"><input type="text" id="consumptionSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchConsumptionCustomers()">搜索</button></div>
+            <div id="consumptionCustomerList"></div>
+        </div>
+    </div>
+
+    <!-- 酒水管理页面 -->
+    <div id="winesPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">🍾 酒水管理</h2>
+            <button class="btn btn-success btn-block" onclick="showModal('addWineModal')">➕ 添加酒水</button>
+            <div id="wineList"></div>
+        </div>
+    </div>
+
+    <!-- 消费记录页面 -->
+    <div id="recordsPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">📋 消费记录</h2>
+            <div id="recordsList"></div>
+        </div>
+    </div>
+
+    <!-- SNG比赛记录页面 -->
+    <div id="sngPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">🏆 SNG比赛记录</h2>
+            <div class="search-bar"><input type="text" id="sngSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchSNGCustomers()">搜索</button></div>
+            <div id="sngCustomerList"></div>
+        </div>
+    </div>
+
+    <!-- 排行榜页面 -->
+    <div id="rankingsPage" class="page">
+        <div class="container">
+            <h2 style="margin-bottom: 16px;">📊 积分排行榜</h2>
+            <div id="pointsRankingList" style="margin-bottom: 30px;"></div>
+            <h2 style="margin-bottom: 16px;">🏆 SNG冠亚季军排行榜</h2>
+            <div id="sngRankingList"></div>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">排序规则：冠军数量 > 亚军数量 > 季军数量</p>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="showPage('homePage')"><div class="nav-icon">🏠</div><div class="nav-label">首页</div></div>
+        <div class="nav-item" onclick="showPage('customersPage')"><div class="nav-icon">👥</div><div class="nav-label">客户</div></div>
+        <div class="nav-item" onclick="showPage('pointsPage')"><div class="nav-icon">⭐</div><div class="nav-label">积分</div></div>
+        <div class="nav-item" onclick="showPage('winecardPage')"><div class="nav-icon">🎫</div><div class="nav-label">酒卡</div></div>
+        <div class="nav-item" onclick="showPage('storedwinePage')"><div class="nav-icon">🍾</div><div class="nav-label">存酒</div></div>
+        <div class="nav-item" onclick="showPage('sngPage')"><div class="nav-icon">🏆</div><div class="nav-label">SNG</div></div>
+        <div class="nav-item" onclick="showPage('rankingsPage')"><div class="nav-icon">📊</div><div class="nav-label">排行</div></div>
+    </div>
+
+    <!-- 弹窗 -->
+    <div id="addCustomerModal" class="modal"><div class="modal-content"><h3>添加客户</h3><input type="text" id="newCustomerName" placeholder="客户姓名"><input type="text" id="newCustomerPhone" placeholder="手机尾号(4位)" maxlength="4"><div class="flex"><button class="btn btn-secondary flex-1" onclick="closeModal('addCustomerModal')">取消</button><button class="btn btn-success flex-1" onclick="addCustomer()">确认添加</button></div></div></div>
+
+    <div id="addWineModal" class="modal"><div class="modal-content"><h3>添加酒水</h3><input type="text" id="newWineName" placeholder="酒水名称"><input type="text" id="newWineType" placeholder="类型"><input type="number" id="newWinePrice" placeholder="价格" step="0.01"><input type="number" id="newWineStock" placeholder="库存数量"><textarea id="newWineDesc" placeholder="描述" rows="2"></textarea><div class="flex"><button class="btn btn-secondary flex-1" onclick="closeModal('addWineModal')">取消</button><button class="btn btn-success flex-1" onclick="addWine()">确认添加</button></div></div></div>
+
+    <script>
+        // ========== 页面切换 ==========
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'customersPage') loadCustomers();
+            if (pageId === 'winesPage') loadWines();
+            if (pageId === 'recordsPage') loadRecords();
+            if (pageId === 'homePage') loadStats();
+            if (pageId === 'pointsPage') loadPointsCustomers();
+            if (pageId === 'consumptionPage') loadConsumptionCustomers();
+            if (pageId === 'rankingsPage') { loadPointsRanking(); loadSNGRanking(); }
+            if (pageId === 'winecardPage') loadCardCustomers();
+            if (pageId === 'storedwinePage') loadStoredCustomers();
+        }
+
+        function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function escapeHtml(text) { if (!text) return ''; return text.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+        function logout() { if (confirm('确定要退出登录吗？')) { window.location.href = '/logout'; } }
+
+         // ========== 统计数据 ==========
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('customerCount').innerText = data.customer_count;
+                document.getElementById('wineCount').innerText = data.wine_count;
+                document.getElementById('totalPoints').innerText = data.total_points;
+            } catch(e) { 
+                console.error('统计API失败:', e);
+            }
+        }
+
+        // ========== 客户管理 ==========
+        async function searchCustomers() {
+            const keyword = document.getElementById('searchInput').value;
+            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
+            const customers = await res.json();
+            renderCustomerList(customers);
+        }
+
+        async function loadCustomers() {
+            const res = await fetch('/api/customers');
+            const customers = await res.json();
+            renderCustomerList(customers);
+        }
+
+        function renderCustomerList(customers) {
+            const container = document.getElementById('customerList');
+            if (!customers.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无客户</div>'; return; }
+            container.innerHTML = customers.map(c => `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap;">
+                        <div>
+                            <div class="customer-name">${escapeHtml(c.name)}</div>
+                            <div class="customer-phone">📱 ${c.phone_tail}</div>
+                            <div class="badge-points" style="margin-top:6px;">⭐ 积分: ${c.points}</div>
+                            <div style="font-size:12px; color:#999;">💰 消费: ¥${c.total_consumption || 0}</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary" style="margin-bottom:5px; width:100%;" onclick="showEditCustomerModal(${c.id}, '${escapeHtml(c.name)}', '${c.phone_tail}')">✏️ 编辑</button>
+                            <button class="btn btn-danger" onclick="deleteCustomer(${c.id}, '${escapeHtml(c.name)}')">删除</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addCustomer() {
+            const name = document.getElementById('newCustomerName').value.trim();
+            const phone_tail = document.getElementById('newCustomerPhone').value.trim();
+            const res = await fetch('/api/customers', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, phone_tail}) });
+            const data = await res.json();
+            if (data.success) { alert('添加成功'); closeModal('addCustomerModal'); document.getElementById('newCustomerName').value = ''; document.getElementById('newCustomerPhone').value = ''; loadCustomers(); loadStats(); }
+            else alert('添加失败: ' + data.error);
+        }
+
+        async function deleteCustomer(id, name) {
+            if (!confirm(`确定删除客户 ${name} 吗？`)) return;
+            const res = await fetch(`/api/customers/${id}`, {method: 'DELETE'});
+            const data = await res.json();
+            if (data.success) { alert('删除成功'); loadCustomers(); loadStats(); }
+            else alert('删除失败');
+        }
+
+        // ========== 编辑客户 ==========
+        function showEditCustomerModal(customerId, oldName, oldPhone) {
+            const modalHtml = `
+                <div id="editCustomerModal" class="modal" style="display:flex;">
+                    <div class="modal-content">
+                        <h3>编辑客户信息</h3>
+                        <input type="text" id="editCustomerName" placeholder="客户姓名" value="${escapeHtml(oldName)}" required>
+                        <input type="text" id="editCustomerPhone" placeholder="手机尾号(4位)" value="${oldPhone}" maxlength="4" required>
+                        <div class="flex">
+                            <button class="btn btn-secondary flex-1" onclick="closeEditCustomerModal()">取消</button>
+                            <button class="btn btn-success flex-1" onclick="confirmEditCustomer(${customerId})">保存修改</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function closeEditCustomerModal() {
+            const modal = document.getElementById('editCustomerModal');
+            if (modal) modal.remove();
+        }
+
+        async function confirmEditCustomer(customerId) {
+            const newName = document.getElementById('editCustomerName').value.trim();
+            const newPhone = document.getElementById('editCustomerPhone').value.trim();
+            
+            if (!newName) { alert('请填写客户姓名'); return; }
+            if (newPhone.length !== 4 || !/^\d+$/.test(newPhone)) { alert('手机尾号必须是4位数字'); return; }
+            
+            const operator = prompt('请输入您的姓名:');
+            if (!operator) return;
+            
+            const res = await fetch(`/api/customers/${customerId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: newName, phone_tail: newPhone, operator: operator})
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`修改成功！\n客户: ${newName}\n手机尾号: ${newPhone}`);
+                closeEditCustomerModal();
+                loadCustomers();
+                loadStats();
+            } else {
+                alert('修改失败: ' + data.error);
+            }
+        }
+
+        // ========== 积分管理 ==========
+        async function searchPointsCustomers() {
+            const keyword = document.getElementById('pointsSearchInput').value;
+            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
+            const customers = await res.json();
+            renderPointsCustomerList(customers);
+        }
+
+        async function loadPointsCustomers() {
+            const res = await fetch('/api/customers');
+            const customers = await res.json();
+            renderPointsCustomerList(customers.slice(0, 30));
+        }
+
+        function renderPointsCustomerList(customers) {
+            const container = document.getElementById('pointsCustomerList');
+            if (!customers.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无客户</div>'; return; }
+            container.innerHTML = customers.map(c => `
+                <div class="card">
+                    <div class="customer-name">${escapeHtml(c.name)} (${c.phone_tail})</div>
+                    <div class="badge-points" style="margin:8px 0;">⭐ 当前积分: ${c.points}</div>
+                    <div class="flex">
+                        <button class="btn btn-success flex-1" onclick="openPointsModal(${c.id}, '${escapeHtml(c.name)}', ${c.points}, 'add')">➕ 增加</button>
+                        <button class="btn btn-warning flex-1" onclick="openPointsModal(${c.id}, '${escapeHtml(c.name)}', ${c.points}, 'reduce')">➖ 扣减</button>
+                    </div>
+                    <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="viewPointsRecords(${c.id}, '${escapeHtml(c.name)}')">📋 查看积分记录</button>
+                </div>
+            `).join('');
+        }
+
+        function openPointsModal(customerId, customerName, currentPoints, action) {
+            const actionText = action === 'add' ? '增加' : '扣减';
+            const points = prompt(`${actionText}积分\n客户: ${customerName}\n当前积分: ${currentPoints}\n\n请输入要${actionText}的积分数值:`);
+            if (!points || isNaN(points) || parseInt(points) <= 0) { if(points) alert('请输入有效的正整数'); return; }
+            const reason = prompt('请输入原因说明 (如:消费赠送/兑换酒水):');
+            if (!reason) { alert('请输入原因'); return; }
+            const operator = prompt('请输入您的姓名:');
+            if (!operator) { alert('请输入操作人姓名'); return; }
+            updatePoints(customerId, parseInt(points), action, reason, operator);
+        }
+
+        async function updatePoints(customerId, points, action, reason, operator) {
+            const res = await fetch('/api/points', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({customer_id: customerId, points, action, reason, operator}) });
+            const data = await res.json();
+            if (data.success) { alert(`操作成功！新积分: ${data.new_points}`); loadPointsCustomers(); loadCustomers(); loadStats(); }
+            else alert('操作失败: ' + data.error);
+        }
+
+        async function viewPointsRecords(customerId, customerName) {
+            const res = await fetch(`/api/points_records/${customerId}`);
+            const records = await res.json();
+            if (!records.length) { alert(`${customerName} 暂无积分记录`); return; }
+            let msg = `${customerName} 的积分记录:\n\n` + records.map(r => `${r.change_type} ${r.points_change}分 - ${r.reason} (${r.operator}) ${r.record_time}`).join('\n');
+            alert(msg);
+        }
+
+        // ========== 酒卡管理 ==========
+        async function getCustomerCardTotal(customerId) {
+            try {
+                const res = await fetch(`/api/winecards/all/${customerId}`);
+                const cards = await res.json();
+                let total = 0;
+                cards.forEach(c => {
+                    if (c.status === 'active') {
+                        total += c.quantity;
+                    }
+                });
+                return total;
+            } catch(e) {
+                return 0;
+            }
+        }
+
+        async function searchCardCustomers() {
+            const keyword = document.getElementById('cardSearchInput').value;
+            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
+            const customers = await res.json();
+            for (let c of customers) {
+                c.total_cards = await getCustomerCardTotal(c.id);
+            }
+            renderCardCustomerList(customers);
+        }
+
+        async function loadCardCustomers() {
+            const res = await fetch('/api/customers');
+            const customers = await res.json();
+            for (let c of customers.slice(0, 30)) {
+                c.total_cards = await getCustomerCardTotal(c.id);
+            }
+            renderCardCustomerList(customers.slice(0, 30));
+        }
+
+        function renderCardCustomerList(customers) {
+            const container = document.getElementById('winecardCustomerList');
+            if (!customers.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无客户</div>'; return; }
+            container.innerHTML = customers.map(c => `
+                <div class="card">
+                    <div class="customer-name">${escapeHtml(c.name)} (${c.phone_tail})</div>
+                    <div class="badge-points" style="margin:8px 0;">🎫 当前酒卡总数: ${c.total_cards || 0}张</div>
+                    <div class="flex">
+                        <button class="btn btn-success flex-1" onclick="showAddCardModal(${c.id}, '${escapeHtml(c.name)}')">➕ 增加酒卡</button>
+                        <button class="btn btn-warning flex-1" onclick="showUseCardModal(${c.id}, '${escapeHtml(c.name)}')">➖ 使用酒卡</button>
+                    </div>
+                    <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="viewCustomerCardRecords(${c.id}, '${escapeHtml(c.name)}')">📋 查看酒卡记录</button>
+                </div>
+            `).join('');
+        }
+
+        function showAddCardModal(customerId, customerName) {
+            const modalHtml = `
+                <div id="addCardModal" class="modal" style="display:flex;">
+                    <div class="modal-content">
+                        <h3>存储酒卡 - ${escapeHtml(customerName)}</h3>
+                        <input type="text" id="cardNumber" placeholder="酒卡编号 (可选)">
+                        <input type="text" id="cardType" placeholder="酒卡类型" required>
+                        <input type="number" id="cardQuantity" placeholder="数量" value="1" min="1" required>
+                        <input type="date" id="cardExpiry" placeholder="有效期">
+                        <textarea id="cardNote" placeholder="备注" rows="2"></textarea>
+                        <div class="flex">
+                            <button class="btn btn-secondary flex-1" onclick="closeAddCardModal()">取消</button>
+                            <button class="btn btn-success flex-1" onclick="confirmAddWineCard(${customerId})">确认存储</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function closeAddCardModal() { const modal = document.getElementById('addCardModal'); if (modal) modal.remove(); }
+
+        async function confirmAddWineCard(customerId) {
+            const cardNumber = document.getElementById('cardNumber').value.trim();
+            const cardType = document.getElementById('cardType').value.trim();
+            const quantity = parseInt(document.getElementById('cardQuantity').value);
+            const expiryDate = document.getElementById('cardExpiry').value;
+            const note = document.getElementById('cardNote').value.trim();
+            const operator = prompt('请输入您的姓名:');
+            if (!cardType) { alert('请填写酒卡类型'); return; }
+            if (!operator) { alert('请输入操作人姓名'); return; }
+            const res = await fetch('/api/winecards', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({customer_id: customerId, card_number: cardNumber, card_type: cardType, quantity, expiry_date: expiryDate, note, operator}) });
+            const data = await res.json();
+            if (data.success) { alert(`酒卡存储成功！\n类型: ${cardType}\n数量: ${quantity}`); closeAddCardModal(); searchCardCustomers(); }
+            else alert('存储失败: ' + data.error);
+        }
+
+        function showUseCardModal(customerId, customerName) {
+            const modalHtml = `
+                <div id="useCardModal" class="modal" style="display:flex;">
+                    <div class="modal-content">
+                        <h3>使用酒卡 - ${escapeHtml(customerName)}</h3>
+                        <select id="cardSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:12px;">
+                            <option value="">请选择要使用的酒卡</option>
+                        </select>
+                        <input type="number" id="useCardQuantity" placeholder="使用数量" min="1" required>
+                        <input type="text" id="useCardReason" placeholder="使用原因" required>
+                        <div class="flex">
+                            <button class="btn btn-secondary flex-1" onclick="closeUseCardModal()">取消</button>
+                            <button class="btn btn-warning flex-1" onclick="confirmUseCard(${customerId})">确认使用</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            loadCustomerCardOptions(customerId);
+        }
+
+        async function loadCustomerCardOptions(customerId) {
+            const res = await fetch(`/api/winecards/all/${customerId}`);
+            const cards = await res.json();
+            const select = document.getElementById('cardSelect');
+            select.innerHTML = '<option value="">请选择要使用的酒卡</option>';
+            cards.forEach(card => {
+                if (card.status === 'active' && card.quantity > 0) {
+                    select.innerHTML += `<option value="${card.id}">${card.card_type} - 剩余${card.quantity}张${card.card_number ? ' (编号:' + card.card_number + ')' : ''}</option>`;
+                }
+            });
+            if (cards.filter(c => c.status === 'active' && c.quantity > 0).length === 0) {
+                select.innerHTML = '<option value="">暂无可用酒卡</option>';
+            }
+        }
+
+        function closeUseCardModal() {
+            const modal = document.getElementById('useCardModal');
+            if (modal) modal.remove();
+        }
+
+        async function confirmUseCard(customerId) {
+            const cardId = document.getElementById('cardSelect').value;
+            const quantity = parseInt(document.getElementById('useCardQuantity').value);
+            const reason = document.getElementById('useCardReason').value.trim();
+            const operator = prompt('请输入您的姓名:');
+            
+            if (!cardId) { alert('请选择酒卡'); return; }
+            if (!quantity || quantity <= 0) { alert('请输入有效的使用数量'); return; }
+            if (!reason) { alert('请填写使用原因'); return; }
+            if (!operator) { alert('请输入操作人姓名'); return; }
+            
+            const res = await fetch('/api/winecards/use', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({card_id: parseInt(cardId), quantity: quantity, operator: operator, reason: reason})
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`使用成功！剩余: ${data.remaining}张`);
+                closeUseCardModal();
+                loadCardCustomers();
+            } else {
+                alert('使用失败: ' + data.error);
+            }
+        }
+
+        async function viewCustomerCardRecords(customerId, customerName) {
+            const res = await fetch(`/api/winecards/all/${customerId}`);
+            const cards = await res.json();
+            if (!cards.length) {
+                alert(`${customerName} 暂无酒卡记录`);
+                return;
+            }
+            
+            let msg = `${customerName} 的酒卡记录:\n\n`;
+            cards.forEach((c, idx) => {
+                msg += `[${idx+1}] 🎫 ${c.card_type}\n`;
+                msg += `   数量: ${c.quantity}张\n`;
+                msg += `   状态: ${c.status === 'active' ? '✅ 有效' : c.status === 'used' ? '❌ 已用完' : '⚠️ 已过期'}\n`;
+                if (c.card_number) msg += `   编号: ${c.card_number}\n`;
+                if (c.expiry_date) msg += `   有效期: ${c.expiry_date}\n`;
+                msg += `   存储时间: ${c.store_date}\n`;
+                msg += `   存储人: ${c.operator}\n`;
+                if (c.note) msg += `   备注: ${c.note}\n`;
+                msg += '---\n';
+            });
+            alert(msg);
+        }
+
+        // ========== 存酒管理 ==========
+        async function getCustomerWineTotal(customerId) {
+            try {
+                const res = await fetch(`/api/storedwines/all/${customerId}`);
+                const wines = await res.json();
+                let total = 0;
+                wines.forEach(w => {
+                    if (w.status === 'stored') {
+                        total += w.quantity;
+                    }
+                });
+                return total;
+            } catch(e) {
+                return 0;
+            }
+        }
+
+        async function searchStoredCustomers() {
+            const keyword = document.getElementById('storedSearchInput').value;
+            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
+            const customers = await res.json();
+            for (let c of customers) {
+                c.total_wines = await getCustomerWineTotal(c.id);
+            }
+            renderStoredCustomerList(customers);
+        }
+
+        async function loadStoredCustomers() {
+            const res = await fetch('/api/customers');
+            const customers = await res.json();
+            for (let c of customers.slice(0, 30)) {
+                c.total_wines = await getCustomerWineTotal(c.id);
+            }
+            renderStoredCustomerList(customers.slice(0, 30));
+        }
+
+        function renderStoredCustomerList(customers) {
+            const container = document.getElementById('storedwineCustomerList');
+            if (!customers.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无客户</div>'; return; }
+            container.innerHTML = customers.map(c => `
+                <div class="card">
+                    <div class="customer-name">${escapeHtml(c.name)} (${c.phone_tail})</div>
+                    <div class="badge-points" style="margin:8px 0;">🍾 当前存酒总数: ${c.total_wines || 0}瓶</div>
+                    <div class="flex">
+                        <button class="btn btn-success flex-1" onclick="showAddStoredWineModal(${c.id}, '${escapeHtml(c.name)}')">➕ 存酒</button>
+                        <button class="btn btn-warning flex-1" onclick="showPickupWineModal(${c.id}, '${escapeHtml(c.name)}')">➖ 取酒</button>
+                    </div>
+                    <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="viewCustomerStoredWineRecords(${c.id}, '${escapeHtml(c.name)}')">📋 查看存酒记录</button>
+                </div>
+            `).join('');
+        }
+
+        async function showAddStoredWineModal(customerId, customerName) {
+            const res = await fetch('/api/wines');
+            const wines = await res.json();
+            if (!wines.length) { alert('请先添加酒水'); return; }
+            let wineList = wines.map(w => `${w.id} - ${w.name} (¥${w.price})`).join('\n');
+            let wineChoice = prompt(`选择存酒\n客户: ${customerName}\n\n${wineList}\n\n请输入酒水ID:`);
+            if (!wineChoice) return;
+            let wine = wines.find(w => w.id == parseInt(wineChoice));
+            if (!wine) { alert('酒水ID无效'); return; }
+            let quantity = prompt(`存酒数量 (${wine.name}):`);
+            if (!quantity || isNaN(quantity) || parseInt(quantity) <= 0) { alert('请输入有效数量'); return; }
+            let pickupDate = prompt('预计取酒日期 (可选，格式: YYYY-MM-DD):');
+            let note = prompt('备注 (可选):');
+            let operator = prompt('请输入您的姓名:');
+            if (!operator) return;
+            const addRes = await fetch('/api/storedwines', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({customer_id: customerId, wine_id: wine.id, wine_name: wine.name, quantity: parseInt(quantity), expected_pickup_date: pickupDate, note, operator}) });
+            const data = await addRes.json();
+            if (data.success) { alert(`存酒成功！\n酒水: ${wine.name}\n数量: ${quantity}瓶`); searchStoredCustomers(); }
+            else alert('存酒失败: ' + data.error);
+        }
+
+        function showPickupWineModal(customerId, customerName) {
+            const modalHtml = `
+                <div id="pickupWineModal" class="modal" style="display:flex;">
+                    <div class="modal-content">
+                        <h3>取酒 - ${escapeHtml(customerName)}</h3>
+                        <select id="wineSelect" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; margin-bottom:12px;">
+                            <option value="">请选择要取走的存酒</option>
+                        </select>
+                        <input type="number" id="pickupQuantity" placeholder="取酒数量" min="1" required>
+                        <input type="text" id="pickupReason" placeholder="取酒原因" required>
+                        <div class="flex">
+                            <button class="btn btn-secondary flex-1" onclick="closePickupWineModal()">取消</button>
+                            <button class="btn btn-warning flex-1" onclick="confirmPickupWine(${customerId})">确认取酒</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            loadCustomerWineOptions(customerId);
+        }
+
+        async function loadCustomerWineOptions(customerId) {
+            const res = await fetch(`/api/storedwines/all/${customerId}`);
+            const wines = await res.json();
+            const select = document.getElementById('wineSelect');
+            select.innerHTML = '<option value="">请选择要取走的存酒</option>';
+            wines.forEach(wine => {
+                if (wine.status === 'stored' && wine.quantity > 0) {
+                    select.innerHTML += `<option value="${wine.id}">${wine.wine_name} - 剩余${wine.quantity}瓶</option>`;
+                }
+            });
+            if (wines.filter(w => w.status === 'stored' && w.quantity > 0).length === 0) {
+                select.innerHTML = '<option value="">暂无存酒可取</option>';
+            }
+        }
+
+        function closePickupWineModal() {
+            const modal = document.getElementById('pickupWineModal');
+            if (modal) modal.remove();
+        }
+
+        async function confirmPickupWine(customerId) {
+            const wineId = document.getElementById('wineSelect').value;
+            const quantity = parseInt(document.getElementById('pickupQuantity').value);
+            const reason = document.getElementById('pickupReason').value.trim();
+            const operator = prompt('请输入您的姓名:');
+            
+            if (!wineId) { alert('请选择存酒'); return; }
+            if (!quantity || quantity <= 0) { alert('请输入有效的取酒数量'); return; }
+            if (!reason) { alert('请填写取酒原因'); return; }
+            if (!operator) { alert('请输入操作人姓名'); return; }
+            
+            const res = await fetch('/api/storedwines/pickup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({wine_id: parseInt(wineId), quantity: quantity, operator: operator, reason: reason})
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`取酒成功！剩余: ${data.remaining}瓶`);
+                closePickupWineModal();
+                loadStoredCustomers();
+            } else {
+                alert('取酒失败: ' + data.error);
+            }
+        }
+
+        async function viewCustomerStoredWineRecords(customerId, customerName) {
+            const res = await fetch(`/api/storedwines/all/${customerId}`);
+            const wines = await res.json();
+            if (!wines.length) {
+                alert(`${customerName} 暂无存酒记录`);
+                return;
+            }
+            
+            let msg = `${customerName} 的存酒记录:\n\n`;
+            wines.forEach((w, idx) => {
+                msg += `[${idx+1}] 🍾 ${w.wine_name}\n`;
+                msg += `   数量: ${w.quantity}瓶\n`;
+                msg += `   状态: ${w.status === 'stored' ? '⏳ 存储中' : w.status === 'picked_up' ? '✅ 已取走' : '⚠️ 过期'}\n`;
+                if (w.expected_pickup_date) msg += `   预计取酒: ${w.expected_pickup_date}\n`;
+                msg += `   存酒时间: ${w.store_date}\n`;
+                msg += `   存酒人: ${w.operator}\n`;
+                if (w.note) msg += `   备注: ${w.note}\n`;
+                msg += '---\n';
+            });
+            alert(msg);
+        }
+
+        // ========== 消费记录 ==========
+        async function searchConsumptionCustomers() {
+            const keyword = document.getElementById('consumptionSearchInput').value;
+            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
+            const customers = await res.json();
+            renderConsumptionCustomerList(customers);
+        }
+
+        async function loadConsumptionCustomers() {
+            const res = await fetch('/api/customers');
+            const customers = await res.json();
+            renderConsumptionCustomerList(customers.slice(0, 30));
+        }
+
+        function renderConsumptionCustomerList(customers) {
+            const container = document.getElementById('consumptionCustomerList');
+            if (!customers.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无客户</div>'; return; }
+            container.innerHTML = customers.map(c => `
+                <div class="card">
+                    <div class="customer-name">${escapeHtml(c.name)} (${c.phone_tail})</div>
+                    <div class="badge-points" style="margin:8px 0;">⭐ 当前积分: ${c.points}</div>
+                    <button class="btn btn-primary btn-block" onclick="openConsumptionModal(${c.id}, '${escapeHtml(c.name)}')">🍷 记录消费</button>
+                </div>
+            `).join('');
+        }
+
+        async function openConsumptionModal(customerId, customerName) {
+            const winesRes = await fetch('/api/wines/available');
+            const wines = await winesRes.json();
+            if (!wines.length) { alert('暂无酒水库存，请先添加酒水'); return; }
+            let wineList = wines.map(w => `${w.id} - ${w.name} (¥${w.price}, 库存:${w.stock})`).join('\n');
+            let wineChoice = prompt(`记录消费\n客户: ${customerName}\n\n${wineList}\n\n请输入酒水ID:`);
+            if (!wineChoice) return;
+            let wine = wines.find(w => w.id == parseInt(wineChoice));
+            if (!wine) { alert('酒水ID无效'); return; }
+            let quantity = prompt(`购买数量 (${wine.name}, 库存:${wine.stock}):`);
+            if (!quantity || isNaN(quantity) || parseInt(quantity) <= 0) { alert('请输入有效数量'); return; }
+            if (parseInt(quantity) > wine.stock) { alert(`库存不足，只剩 ${wine.stock} 瓶`); return; }
+            let operator = prompt('请输入您的姓名:');
+            if (!operator) return;
+            const res = await fetch('/api/consumption', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({customer_id: customerId, wine_id: wine.id, quantity: parseInt(quantity), operator}) });
+            const data = await res.json();
+            if (data.success) { alert(`消费成功！\n消费金额: ¥${data.total}\n获得积分: ${data.points_earned}\n新积分: ${data.new_points}`); loadConsumptionCustomers(); loadCustomers(); loadStats(); loadWines(); loadRecords(); }
+            else alert('操作失败: ' + data.error);
+        }
+
+        // ========== 酒水管理 ==========
+        async function loadWines() {
+            const res = await fetch('/api/wines');
+            const wines = await res.json();
+            const container = document.getElementById('wineList');
+            if (!wines.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无酒水</div>'; return; }
+            container.innerHTML = wines.map(w => `
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div><div class="customer-name">🍾 ${escapeHtml(w.name)}</div><div>📌 ${w.type || '未分类'} | ¥${w.price} | 库存: ${w.stock}</div><div style="font-size:12px; color:#999;">${w.description || ''}</div></div>
+                        <div><button class="btn btn-warning" style="margin-right:5px;" onclick="editWine(${w.id}, '${escapeHtml(w.name)}', '${escapeHtml(w.type)}', ${w.price}, ${w.stock}, '${escapeHtml(w.description)}')">编辑</button><button class="btn btn-danger" onclick="deleteWine(${w.id}, '${escapeHtml(w.name)}')">删除</button></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addWine() {
+            const name = document.getElementById('newWineName').value.trim();
+            const type = document.getElementById('newWineType').value.trim();
+            const price = parseFloat(document.getElementById('newWinePrice').value);
+            const stock = parseInt(document.getElementById('newWineStock').value);
+            const description = document.getElementById('newWineDesc').value.trim();
+            if (!name) { alert('请填写酒水名称'); return; }
+            const res = await fetch('/api/wines', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, type, price, stock, description}) });
+            const data = await res.json();
+            if (data.success) { alert('添加成功'); closeModal('addWineModal'); document.getElementById('newWineName').value = ''; document.getElementById('newWineType').value = ''; document.getElementById('newWinePrice').value = ''; document.getElementById('newWineStock').value = ''; document.getElementById('newWineDesc').value = ''; loadWines(); loadStats(); }
+            else alert('添加失败');
+        }
+
+        async function editWine(id, oldName, oldType, oldPrice, oldStock, oldDesc) {
+            const name = prompt('酒水名称', oldName);
+            if (!name) return;
+            const type = prompt('类型', oldType);
+            const price = parseFloat(prompt('价格', oldPrice));
+            const stock = parseInt(prompt('库存', oldStock));
+            const description = prompt('描述', oldDesc);
+            if (isNaN(price) || isNaN(stock)) { alert('价格和库存必须是数字'); return; }
+            const res = await fetch(`/api/wines/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, type, price, stock, description}) });
+            const data = await res.json();
+            if (data.success) { alert('修改成功'); loadWines(); }
+            else alert('修改失败');
+        }
+
+        async function deleteWine(id, name) {
+            if (!confirm(`确定删除酒水 ${name} 吗？`)) return;
+            const res = await fetch(`/api/wines/${id}`, {method: 'DELETE'});
+            const data = await res.json();
+            if (data.success) { alert('删除成功'); loadWines(); loadStats(); }
+            else alert('删除失败');
+        }
+
+        async function loadRecords() {
+            const res = await fetch('/api/consumption_records');
+            const records = await res.json();
+            const container = document.getElementById('recordsList');
+            if (!records.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无消费记录</div>'; return; }
+            container.innerHTML = records.map(r => `
+                <div class="card">
+                    <div><span class="customer-name">${escapeHtml(r.customer_name)}</span> <span style="color:#666;">(${r.phone_tail})</span></div>
+                    <div style="margin:8px 0;">🍷 ${escapeHtml(r.wine_name)} × ${r.quantity} = ¥${r.total_amount}</div>
+                    <div style="font-size:12px; color:#28a745;">⭐ +${r.points_earned}积分</div>
+                    <div style="font-size:11px; color:#999;">👤 ${r.operator} | ${r.record_time}</div>
+                </div>
+            `).join('');
+        }
+
+        // ========== SNG管理 ==========
+        async function searchSNGCustomers() {
+            const keyword = document.getElementById('sngSearchInput').value;
+            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
+            const customers = await res.json();
+            renderSNGCustomerList(customers);
+        }
+
+        function renderSNGCustomerList(customers) {
+            const container = document.getElementById('sngCustomerList');
+            if (!customers.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无客户</div>'; return; }
+            container.innerHTML = customers.map(c => `
+                <div class="card">
+                    <div class="customer-name">${escapeHtml(c.name)} (${c.phone_tail})</div>
+                    <div class="badge-points" style="margin:8px 0;">⭐ 积分: ${c.points}</div>
+                    <div class="flex">
+                        <button class="btn btn-warning flex-1" onclick="recordSNG(${c.id}, '${escapeHtml(c.name)}', '冠军')">🏆 冠军</button>
+                        <button class="btn btn-secondary flex-1" onclick="recordSNG(${c.id}, '${escapeHtml(c.name)}', '亚军')">🥈 亚军</button>
+                        <button class="btn btn-secondary flex-1" onclick="recordSNG(${c.id}, '${escapeHtml(c.name)}', '季军')">🥉 季军</button>
+                    </div>
+                    <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="viewCustomerSNG(${c.id}, '${escapeHtml(c.name)}')">📋 查看比赛记录</button>
+                </div>
+            `).join('');
+        }
+
+        async function recordSNG(customerId, customerName, rank) {
+            let pointsMap = {'冠军': 50, '亚军': 30, '季军': 20};
+            let points = pointsMap[rank];
+            let operator = prompt('请输入您的姓名:');
+            if (!operator) return;
+            const res = await fetch('/api/sng/record', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({customer_id: customerId, rank: rank, points: points, operator: operator}) });
+            const data = await res.json();
+            if (data.success) { alert(`${rank}记录成功！\n客户: ${customerName}\n获得积分: ${points}`); searchSNGCustomers(); loadPointsRanking(); loadSNGRanking(); }
+            else alert('记录失败: ' + data.error);
+        }
+
+        async function viewCustomerSNG(customerId, customerName) {
+            const res = await fetch(`/api/sng/records/${customerId}`);
+            const records = await res.json();
+            if (!records.length) { alert(`${customerName} 暂无比赛记录`); return; }
+            let champion = records.filter(r => r.rank_name === '冠军').length;
+            let runnerUp = records.filter(r => r.rank_name === '亚军').length;
+            let thirdPlace = records.filter(r => r.rank_name === '季军').length;
+            let msg = `${customerName} 的比赛记录:\n\n🏆 冠军: ${champion}次\n🥈 亚军: ${runnerUp}次\n🥉 季军: ${thirdPlace}次\n📊 总计: ${records.length}次\n\n详细记录:\n`;
+            records.forEach(r => { msg += `${r.rank_name} | +${r.points_earned}分 | ${r.game_date} | ${r.operator}\n`; });
+            alert(msg);
+        }
+
+        // ========== 排行榜 ==========
+        async function loadPointsRanking() {
+            const res = await fetch('/api/rankings/points');
+            const rankings = await res.json();
+            const container = document.getElementById('pointsRankingList');
+            if (!rankings.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无数据</div>'; return; }
+            container.innerHTML = `<div class="card">${rankings.slice(0, 20).map((r, idx) => `
+                <div class="ranking-row">
+                    <div class="ranking-rank">${idx + 1}</div>
+                    <div class="ranking-name">${escapeHtml(r.name)} (${r.phone_tail})</div>
+                    <div class="ranking-value">${r.points} 分</div>
+                </div>
+            `).join('')}</div>`;
+        }
+
+        async function loadSNGRanking() {
+            const res = await fetch('/api/rankings/sng');
+            const rankings = await res.json();
+            const container = document.getElementById('sngRankingList');
+            if (!rankings.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无数据</div>'; return; }
+            container.innerHTML = `<div class="card">${rankings.slice(0, 20).map((r, idx) => `
+                <div class="ranking-row">
+                    <div class="ranking-rank">${idx + 1}</div>
+                    <div class="ranking-name">${escapeHtml(r.name)}</div>
+                    <div class="sng-stats">
+                        <span>🏆 ${r.champion_count}</span>
+                        <span>🥈 ${r.runner_up_count}</span>
+                        <span>🥉 ${r.third_place_count}</span>
+                        <span>📊 ${r.total_count}</span>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+        }
+
+        // 初始化
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>
