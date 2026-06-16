@@ -177,24 +177,113 @@ def require_admin():
     return True
 
 
+def parse_pagination(default_page_size=20, max_page_size=100):
+    """解析请求中的 page / page_size 参数，做边界检查。
+
+    Returns:
+        (page, page_size) 元组，均为正整数。
+    """
+    try:
+        page = int(request.args.get('page', 1))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = int(request.args.get('page_size', default_page_size))
+    except (TypeError, ValueError):
+        page_size = default_page_size
+
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = default_page_size
+    if page_size > max_page_size:
+        page_size = max_page_size
+    return page, page_size
+
+
+def is_paginated_request():
+    """请求中显式带了 page 参数，即视为需要分页结构响应。"""
+    return 'page' in request.args
+
+
+def paginated_response(items, total, page, page_size):
+    """统一的分页响应结构。"""
+    return jsonify({
+        'items': items,
+        'total': total,
+        'page': page,
+        'page_size': page_size
+    })
+
+
 # ---------- 客户相关API ----------
 @app.route('/api/customers')
 def get_customers():
     if not require_admin():
         return jsonify({'error': '未授权'}), 401
 
-    keyword = request.args.get('keyword', '')
-    if keyword:
-        customers = Customer.query.filter(
-            (Customer.name.contains(keyword)) |
-            (Customer.phone_tail.contains(keyword))
-        ).order_by(Customer.points.desc()).all()
+    keyword = request.args.get('keyword', '').strip()
+    # sort 可选值：id_desc（默认/兼容旧行为）、points_desc（积分管理页）、cards_desc（酒卡管理页）
+    sort = request.args.get('sort', '').strip()
+
+    # 酒卡数倒序：用子查询聚合每个客户的有效酒卡 quantity 总和，再左联到 Customer 排序
+    if sort == 'cards_desc':
+        active_card_sum = db.session.query(
+            WineCard.customer_id.label('cid'),
+            func.coalesce(func.sum(WineCard.quantity), 0).label('total_cards')
+        ).filter(WineCard.status == 'active').group_by(WineCard.customer_id).subquery()
+
+        base_query = db.session.query(Customer).outerjoin(
+            active_card_sum, Customer.id == active_card_sum.c.cid
+        )
+        if keyword:
+            base_query = base_query.filter(
+                (Customer.name.contains(keyword)) |
+                (Customer.phone_tail.contains(keyword))
+            )
+        # 主键 id 兜底，保证分页稳定
+        base_query = base_query.order_by(
+            func.coalesce(active_card_sum.c.total_cards, 0).desc(),
+            Customer.id.desc()
+        )
     else:
-        customers = Customer.query.order_by(Customer.id.desc()).limit(50).all()
-    return jsonify([{
-        'id': c.id, 'name': c.name, 'phone_tail': c.phone_tail,
-        'points': c.points, 'total_consumption': c.total_consumption
-    } for c in customers])
+        # 默认/普通过滤分支
+        if keyword:
+            base_query = Customer.query.filter(
+                (Customer.name.contains(keyword)) |
+                (Customer.phone_tail.contains(keyword))
+            )
+        else:
+            base_query = Customer.query
+
+        if sort == 'points_desc':
+            # 积分降序，相同积分再按 id 降序，避免分页时同积分客户位置漂移
+            base_query = base_query.order_by(Customer.points.desc(), Customer.id.desc())
+        elif keyword:
+            # 搜索场景下默认按积分高低，便于运营按重要客户筛选（保留旧行为）
+            base_query = base_query.order_by(Customer.points.desc(), Customer.id.desc())
+        else:
+            base_query = base_query.order_by(Customer.id.desc())
+
+    def serialize(c):
+        return {
+            'id': c.id, 'name': c.name, 'phone_tail': c.phone_tail,
+            'points': c.points, 'total_consumption': c.total_consumption
+        }
+
+    # 显式带 page 参数：返回分页结构
+    if is_paginated_request():
+        page, page_size = parse_pagination()
+        total = base_query.count()
+        offset = (page - 1) * page_size
+        customers = base_query.offset(offset).limit(page_size).all()
+        return paginated_response(
+            [serialize(c) for c in customers], total, page, page_size
+        )
+
+    # 兼容旧调用：未带 page 时返回旧的数组结构（限量 50 条避免一次返回过多）
+    customers = base_query.limit(50).all()
+    return jsonify([serialize(c) for c in customers])
 
 
 @app.route('/api/customers', methods=['POST'])
@@ -508,11 +597,27 @@ def get_wines():
     if not require_admin():
         return jsonify({'error': '未授权'}), 401
 
-    wines = Wine.query.order_by(Wine.name).all()
-    return jsonify([{
-        'id': w.id, 'name': w.name, 'type': w.type or '',
-        'price': w.price, 'stock': w.stock, 'description': w.description or ''
-    } for w in wines])
+    base_query = Wine.query.order_by(Wine.name)
+
+    def serialize(w):
+        return {
+            'id': w.id, 'name': w.name, 'type': w.type or '',
+            'price': w.price, 'stock': w.stock, 'description': w.description or ''
+        }
+
+    # 分页响应（前端管理页使用）
+    if is_paginated_request():
+        page, page_size = parse_pagination()
+        total = base_query.count()
+        offset = (page - 1) * page_size
+        wines = base_query.offset(offset).limit(page_size).all()
+        return paginated_response(
+            [serialize(w) for w in wines], total, page, page_size
+        )
+
+    # 兼容旧调用：消费下单弹窗等场景仍需要全量酒水列表
+    wines = base_query.all()
+    return jsonify([serialize(w) for w in wines])
 
 
 @app.route('/api/wines/available')
@@ -615,21 +720,35 @@ def get_consumption_records():
     if not require_admin():
         return jsonify({'error': '未授权'}), 401
 
-    records = db.session.query(
+    base_query = db.session.query(
         ConsumptionRecord, Customer.name.label('customer_name'),
         Customer.phone_tail, Wine.name.label('wine_name')
     ).join(Customer, ConsumptionRecord.customer_id == Customer.id)\
      .join(Wine, ConsumptionRecord.wine_id == Wine.id)\
-     .order_by(ConsumptionRecord.record_time.desc()).limit(50).all()
+     .order_by(ConsumptionRecord.record_time.desc())
 
-    return jsonify([{
-        'customer_name': r.customer_name, 'phone_tail': r.phone_tail,
-        'wine_name': r.wine_name, 'quantity': r.ConsumptionRecord.quantity,
-        'total_amount': r.ConsumptionRecord.total_amount,
-        'points_earned': r.ConsumptionRecord.points_earned,
-        'operator': r.ConsumptionRecord.operator or '-',
-        'record_time': r.ConsumptionRecord.record_time.strftime('%Y-%m-%d %H:%M')
-    } for r in records])
+    def serialize(r):
+        return {
+            'customer_name': r.customer_name, 'phone_tail': r.phone_tail,
+            'wine_name': r.wine_name, 'quantity': r.ConsumptionRecord.quantity,
+            'total_amount': r.ConsumptionRecord.total_amount,
+            'points_earned': r.ConsumptionRecord.points_earned,
+            'operator': r.ConsumptionRecord.operator or '-',
+            'record_time': r.ConsumptionRecord.record_time.strftime('%Y-%m-%d %H:%M')
+        }
+
+    if is_paginated_request():
+        page, page_size = parse_pagination()
+        total = base_query.count()
+        offset = (page - 1) * page_size
+        records = base_query.offset(offset).limit(page_size).all()
+        return paginated_response(
+            [serialize(r) for r in records], total, page, page_size
+        )
+
+    # 兼容旧调用：未带 page 时返回最近 50 条
+    records = base_query.limit(50).all()
+    return jsonify([serialize(r) for r in records])
 
 
 # ---------- SNG相关API ----------
@@ -684,35 +803,63 @@ def get_sng_records(customer_id):
 # ---------- 排行榜API ----------
 @app.route('/api/rankings/points')
 def get_points_ranking():
-    customers = Customer.query.order_by(Customer.points.desc()).limit(50).all()
-    return jsonify([{
-        'name': c.name, 'phone_tail': c.phone_tail, 'points': c.points
-    } for c in customers])
+    page, page_size = parse_pagination()
+    base_query = Customer.query.order_by(Customer.points.desc(), Customer.id.asc())
+    total = base_query.count()
+    offset = (page - 1) * page_size
+    customers = base_query.offset(offset).limit(page_size).all()
+
+    # 全局排名（跨页连续），便于前端展示 1、2、3…
+    items = [{
+        'name': c.name,
+        'phone_tail': c.phone_tail,
+        'points': c.points,
+        'rank': offset + idx + 1
+    } for idx, c in enumerate(customers)]
+
+    return paginated_response(items, total, page, page_size)
 
 
 @app.route('/api/rankings/sng')
 def get_sng_ranking():
-    results = db.session.query(
+    champion_expr = func.sum(case((SNGRecord.rank_name == '冠军', 1), else_=0))
+    runner_up_expr = func.sum(case((SNGRecord.rank_name == '亚军', 1), else_=0))
+    third_expr = func.sum(case((SNGRecord.rank_name == '季军', 1), else_=0))
+
+    base_query = db.session.query(
         Customer.id, Customer.name,
-        func.sum(case((SNGRecord.rank_name == '冠军', 1), else_=0)).label('champion_count'),
-        func.sum(case((SNGRecord.rank_name == '亚军', 1), else_=0)).label('runner_up_count'),
-        func.sum(case((SNGRecord.rank_name == '季军', 1), else_=0)).label('third_place_count'),
+        champion_expr.label('champion_count'),
+        runner_up_expr.label('runner_up_count'),
+        third_expr.label('third_place_count'),
         func.count(SNGRecord.id).label('total_count')
     ).outerjoin(SNGRecord, Customer.id == SNGRecord.customer_id)\
      .group_by(Customer.id, Customer.name)\
-     .order_by(
-        func.sum(case((SNGRecord.rank_name == '冠军', 1), else_=0)).desc(),
-        func.sum(case((SNGRecord.rank_name == '亚军', 1), else_=0)).desc(),
-        func.sum(case((SNGRecord.rank_name == '季军', 1), else_=0)).desc()
-     ).limit(50).all()
+     .order_by(champion_expr.desc(), runner_up_expr.desc(), third_expr.desc(), Customer.id.asc())
 
-    return jsonify([{
-        'name': r.name,
-        'champion_count': int(r.champion_count or 0),
-        'runner_up_count': int(r.runner_up_count or 0),
-        'third_place_count': int(r.third_place_count or 0),
-        'total_count': int(r.total_count or 0)
-    } for r in results])
+    def serialize(idx_offset, idx, r):
+        return {
+            'name': r.name,
+            'champion_count': int(r.champion_count or 0),
+            'runner_up_count': int(r.runner_up_count or 0),
+            'third_place_count': int(r.third_place_count or 0),
+            'total_count': int(r.total_count or 0),
+            'rank': idx_offset + idx + 1
+        }
+
+    if is_paginated_request():
+        page, page_size = parse_pagination()
+        # 子查询计数客户总数：上面 base_query 是分组结果，再 .count() 容易出错；用客户表总数即可
+        total = Customer.query.count()
+        offset = (page - 1) * page_size
+        results = base_query.offset(offset).limit(page_size).all()
+        return paginated_response(
+            [serialize(offset, idx, r) for idx, r in enumerate(results)],
+            total, page, page_size
+        )
+
+    # 兼容旧调用：返回数组（前 50 条）
+    results = base_query.limit(50).all()
+    return jsonify([serialize(0, idx, r) for idx, r in enumerate(results)])
 
 
 # ---------- 用户端API（无需登录验证）----------

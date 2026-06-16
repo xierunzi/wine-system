@@ -180,6 +180,40 @@
             padding: 30px;
             font-size: 14px;
         }
+        /* 积分排行分页控件样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .pagination .page-btn {
+            min-width: 32px;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #333;
+        }
+        .pagination .page-btn.active {
+            background: #f0c413;
+            color: #1a1a2e;
+            border-color: #f0c413;
+            font-weight: bold;
+        }
+        .pagination .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination .page-info {
+            font-size: 12px;
+            color: #666;
+            margin: 0 4px;
+        }
 
         .btn-logout {
             width: 100%;
@@ -422,46 +456,49 @@
             return '';
         }
 
-        // 加载积分排行榜
-        async function loadPointsRanking() {
-            try {
-                const res = await fetch('/api/rankings/points');
-                const rankings = await res.json();
-                const container = document.getElementById('pointsRankList');
+        // 用户端排行榜：仅展示积分前 20 名
+        const USER_RANK_LIMIT = 20;
 
-                if (!rankings || rankings.length === 0) {
+        async function loadPointsRanking() {
+            const container = document.getElementById('pointsRankList');
+            try {
+                const res = await fetch(`/api/rankings/points?page=1&page_size=${USER_RANK_LIMIT}`);
+                const data = await res.json();
+                const items = (data && data.items) || [];
+                if (!items.length) {
                     container.innerHTML = '<div class="empty-state">暂无数据</div>';
                     return;
                 }
-
-                container.innerHTML = rankings.slice(0, 10).map((r, idx) => `
-                    <div class="rank-item ${getRankClass(idx)}">
-                        <div class="rank-number">${idx + 1}</div>
+                // rank 由后端返回，前 3 名使用金/银/铜样式
+                container.innerHTML = items.map(r => `
+                    <div class="rank-item ${getRankClass(r.rank - 1)}">
+                        <div class="rank-number">${r.rank}</div>
                         <div class="rank-name">${escapeHtml(r.name)}</div>
                         <div class="rank-value">${r.points} 分</div>
                     </div>
                 `).join('');
             } catch(e) {
-                document.getElementById('pointsRankList').innerHTML = '<div class="empty-state">加载失败</div>';
+                container.innerHTML = '<div class="empty-state">加载失败</div>';
                 console.error(e);
             }
         }
 
-        // 加载SNG排行榜
+        // 加载SNG排行榜（仅前 20 名）
         async function loadSNGRanking() {
             try {
-                const res = await fetch('/api/rankings/sng');
-                const rankings = await res.json();
+                const res = await fetch(`/api/rankings/sng?page=1&page_size=${USER_RANK_LIMIT}`);
+                const data = await res.json();
+                const items = (data && data.items) || [];
                 const container = document.getElementById('sngRankList');
 
-                if (!rankings || rankings.length === 0) {
+                if (!items.length) {
                     container.innerHTML = '<div class="empty-state">暂无数据</div>';
                     return;
                 }
 
-                container.innerHTML = rankings.slice(0, 10).map((r, idx) => `
-                    <div class="rank-item ${getRankClass(idx)}">
-                        <div class="rank-number">${idx + 1}</div>
+                container.innerHTML = items.map(r => `
+                    <div class="rank-item ${getRankClass(r.rank - 1)}">
+                        <div class="rank-number">${r.rank}</div>
                         <div class="rank-name">${escapeHtml(r.name)}</div>
                         <div class="sng-stats">
                             <span>🏆 ${r.champion_count}</span>

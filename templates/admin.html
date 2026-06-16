@@ -55,6 +55,14 @@
         .ranking-name { flex: 1; }
         .ranking-value { font-weight: bold; color: #f0c413; }
         .sng-stats { display: flex; gap: 12px; font-size: 12px; }
+        /* 分页控件样式 */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 12px 0 20px; flex-wrap: wrap; }
+        .pagination .page-btn { padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 13px; color: #333; }
+        .pagination .page-btn:hover:not(:disabled) { background: #f5f5f5; }
+        .pagination .page-btn.active { background: #f0c413; color: #1a1a2e; border-color: #f0c413; font-weight: bold; }
+        .pagination .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .pagination .page-info { font-size: 13px; color: #666; margin: 0 6px; }
+        .pagination .page-size-select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; background: white; color: #333; cursor: pointer; }
         .tab-bar { display: flex; gap: 10px; margin-bottom: 15px; }
         .tab-btn { flex: 1; padding: 10px; background: #f0f0f0; border: none; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; }
         .tab-btn.active { background: #f0c413; color: #1a1a2e; }
@@ -95,6 +103,7 @@
             <div class="search-bar"><input type="text" id="searchInput" placeholder="🔍 输入姓名或手机尾号"><button class="btn btn-primary" onclick="searchCustomers()">搜索</button></div>
             <button class="btn btn-success btn-block" onclick="showModal('addCustomerModal')">➕ 添加新客户</button>
             <div id="customerList"></div>
+            <div id="customerPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -104,6 +113,7 @@
             <h2 style="margin-bottom: 16px;">⭐ 积分管理</h2>
             <div class="search-bar"><input type="text" id="pointsSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchPointsCustomers()">搜索</button></div>
             <div id="pointsCustomerList"></div>
+            <div id="pointsCustomerPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -113,6 +123,7 @@
             <h2 style="margin-bottom: 16px;">🎫 酒卡管理</h2>
             <div class="search-bar"><input type="text" id="cardSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchCardCustomers()">搜索</button></div>
             <div id="winecardCustomerList"></div>
+            <div id="winecardCustomerPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -122,6 +133,7 @@
             <h2 style="margin-bottom: 16px;">🍾 存酒管理</h2>
             <div class="search-bar"><input type="text" id="storedSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchStoredCustomers()">搜索</button></div>
             <div id="storedwineCustomerList"></div>
+            <div id="storedwineCustomerPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -131,6 +143,7 @@
             <h2 style="margin-bottom: 16px;">🍷 记录消费</h2>
             <div class="search-bar"><input type="text" id="consumptionSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchConsumptionCustomers()">搜索</button></div>
             <div id="consumptionCustomerList"></div>
+            <div id="consumptionCustomerPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -140,6 +153,7 @@
             <h2 style="margin-bottom: 16px;">🍾 酒水管理</h2>
             <button class="btn btn-success btn-block" onclick="showModal('addWineModal')">➕ 添加酒水</button>
             <div id="wineList"></div>
+            <div id="winePagination" class="pagination"></div>
         </div>
     </div>
 
@@ -148,6 +162,7 @@
         <div class="container">
             <h2 style="margin-bottom: 16px;">📋 消费记录</h2>
             <div id="recordsList"></div>
+            <div id="recordsPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -157,6 +172,7 @@
             <h2 style="margin-bottom: 16px;">🏆 SNG比赛记录</h2>
             <div class="search-bar"><input type="text" id="sngSearchInput" placeholder="🔍 搜索客户"><button class="btn btn-primary" onclick="searchSNGCustomers()">搜索</button></div>
             <div id="sngCustomerList"></div>
+            <div id="sngCustomerPagination" class="pagination"></div>
         </div>
     </div>
 
@@ -164,9 +180,11 @@
     <div id="rankingsPage" class="page">
         <div class="container">
             <h2 style="margin-bottom: 16px;">📊 积分排行榜</h2>
-            <div id="pointsRankingList" style="margin-bottom: 30px;"></div>
+            <div id="pointsRankingList"></div>
+            <div id="pointsRankingPagination" class="pagination" style="margin-bottom: 30px;"></div>
             <h2 style="margin-bottom: 16px;">🏆 SNG冠亚季军排行榜</h2>
             <div id="sngRankingList"></div>
+            <div id="sngRankingPagination" class="pagination"></div>
             <p style="font-size: 12px; color: #666; margin-top: 10px;">排序规则：冠军数量 > 亚军数量 > 季军数量</p>
         </div>
     </div>
@@ -188,6 +206,111 @@
     <div id="addWineModal" class="modal"><div class="modal-content"><h3>添加酒水</h3><input type="text" id="newWineName" placeholder="酒水名称"><input type="text" id="newWineType" placeholder="类型"><input type="number" id="newWinePrice" placeholder="价格" step="0.01"><input type="number" id="newWineStock" placeholder="库存数量"><textarea id="newWineDesc" placeholder="描述" rows="2"></textarea><div class="flex"><button class="btn btn-secondary flex-1" onclick="closeModal('addWineModal')">取消</button><button class="btn btn-success flex-1" onclick="addWine()">确认添加</button></div></div></div>
 
     <script>
+        // ========== 通用分页组件 ==========
+        // 每个列表页通过 setupPager(key, config) 注册自身，之后调 pagerLoad(key, page) 触发拉取与渲染。
+        // config 字段：
+        //   - fetchPage(page, pageSize): Promise<{items,total}>  // 调后端
+        //   - render(items): Promise<void> | void                // 把 items 渲染到页面
+        //   - controlsId: string                                  // 分页条容器 id
+        //   - defaultPageSize: number = 20                        // 初始每页条数
+        //   - pageSizes: number[] = [10,20,50,100]                // 可选档位
+        const _pagers = {};
+        const DEFAULT_PAGE_SIZES = [10, 20, 50, 100];
+
+        function setupPager(key, config) {
+            _pagers[key] = Object.assign({
+                page: 1,
+                pageSize: config.defaultPageSize || 20,
+                pageSizes: config.pageSizes || DEFAULT_PAGE_SIZES,
+                total: 0
+            }, config);
+        }
+
+        // 重置到第 1 页（搜索条件变化时调用）
+        function pagerReset(key) {
+            const p = _pagers[key];
+            if (p) p.page = 1;
+        }
+
+        async function pagerLoad(key, page) {
+            const p = _pagers[key];
+            if (!p) { console.error('未注册的分页器:', key); return; }
+            if (typeof page === 'number' && page > 0) p.page = page;
+            try {
+                const data = await p.fetchPage(p.page, p.pageSize);
+                const items = (data && data.items) || [];
+                p.total = (data && data.total) || 0;
+                await p.render(items);
+                renderPagerControls(key);
+            } catch (e) {
+                console.error('分页加载失败:', key, e);
+            }
+        }
+
+        function pagerChangePageSize(key, sizeStr) {
+            const p = _pagers[key];
+            if (!p) return;
+            const size = parseInt(sizeStr);
+            if (isNaN(size) || size <= 0) return;
+            p.pageSize = size;
+            p.page = 1;
+            pagerLoad(key);
+        }
+
+        // 渲染分页条：每页条数下拉 + 上一页 / 页码（最多 5 个，带省略） / 下一页 + 总数提示
+        function renderPagerControls(key) {
+            const p = _pagers[key];
+            const el = document.getElementById(p.controlsId);
+            if (!el) return;
+            if (!p.total) { el.innerHTML = ''; return; }
+
+            const totalPages = Math.max(1, Math.ceil(p.total / p.pageSize));
+            if (p.page > totalPages) p.page = totalPages;
+            const current = p.page;
+            const pageNumbers = buildPageNumbers(current, totalPages, 5);
+            const pagesHtml = pageNumbers.map(n => {
+                if (n === '...') return `<span class="page-info">...</span>`;
+                const active = n === current ? ' active' : '';
+                return `<button class="page-btn${active}" onclick="pagerLoad('${key}', ${n})">${n}</button>`;
+            }).join('');
+
+            const sizeOptions = p.pageSizes.map(s =>
+                `<option value="${s}" ${s === p.pageSize ? 'selected' : ''}>${s}/页</option>`
+            ).join('');
+
+            el.innerHTML = `
+                <select class="page-size-select" onchange="pagerChangePageSize('${key}', this.value)">${sizeOptions}</select>
+                <button class="page-btn" ${current <= 1 ? 'disabled' : ''} onclick="pagerLoad('${key}', ${current - 1})">上一页</button>
+                ${pagesHtml}
+                <button class="page-btn" ${current >= totalPages ? 'disabled' : ''} onclick="pagerLoad('${key}', ${current + 1})">下一页</button>
+                <span class="page-info">共 ${p.total} 条 · ${current}/${totalPages} 页</span>
+            `;
+        }
+
+        // 计算页码列表：当前页前后各显示 maxVisible 个，超过则用 '...' 省略
+        function buildPageNumbers(current, totalPages, maxVisible) {
+            if (totalPages <= maxVisible) {
+                return Array.from({ length: totalPages }, (_, i) => i + 1);
+            }
+            const half = Math.floor(maxVisible / 2);
+            let start = Math.max(1, current - half);
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start + 1 < maxVisible) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+            const pages = [];
+            if (start > 1) {
+                pages.push(1);
+                if (start > 2) pages.push('...');
+            }
+            for (let i = start; i <= end; i++) pages.push(i);
+            if (end < totalPages) {
+                if (end < totalPages - 1) pages.push('...');
+                pages.push(totalPages);
+            }
+            return pages;
+        }
+
         // ========== 页面切换 ==========
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -198,7 +321,7 @@
             if (pageId === 'homePage') loadStats();
             if (pageId === 'pointsPage') loadPointsCustomers();
             if (pageId === 'consumptionPage') loadConsumptionCustomers();
-            if (pageId === 'rankingsPage') { loadPointsRanking(); loadSNGRanking(); }
+            if (pageId === 'rankingsPage') { loadPointsRanking(1); loadSNGRanking(1); }
             if (pageId === 'winecardPage') loadCardCustomers();
             if (pageId === 'storedwinePage') loadStoredCustomers();
         }
@@ -223,18 +346,19 @@
         }
 
         // ========== 客户管理 ==========
-        async function searchCustomers() {
-            const keyword = document.getElementById('searchInput').value;
-            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
-            const customers = await res.json();
-            renderCustomerList(customers);
-        }
+        setupPager('customers', {
+            controlsId: 'customerPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) => {
+                const kw = (document.getElementById('searchInput') || {}).value || '';
+                return fetch(`/api/customers?page=${page}&page_size=${pageSize}&keyword=${encodeURIComponent(kw)}`)
+                    .then(r => r.json());
+            },
+            render: (items) => renderCustomerList(items)
+        });
 
-        async function loadCustomers() {
-            const res = await fetch('/api/customers');
-            const customers = await res.json();
-            renderCustomerList(customers);
-        }
+        function searchCustomers() { pagerReset('customers'); pagerLoad('customers'); }
+        function loadCustomers() { pagerLoad('customers'); }
 
         function renderCustomerList(customers) {
             const container = document.getElementById('customerList');
@@ -324,18 +448,20 @@
         }
 
         // ========== 积分管理 ==========
-        async function searchPointsCustomers() {
-            const keyword = document.getElementById('pointsSearchInput').value;
-            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
-            const customers = await res.json();
-            renderPointsCustomerList(customers);
-        }
+        setupPager('pointsCustomers', {
+            controlsId: 'pointsCustomerPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) => {
+                const kw = (document.getElementById('pointsSearchInput') || {}).value || '';
+                // 积分管理页按积分从高到低排序
+                return fetch(`/api/customers?page=${page}&page_size=${pageSize}&sort=points_desc&keyword=${encodeURIComponent(kw)}`)
+                    .then(r => r.json());
+            },
+            render: (items) => renderPointsCustomerList(items)
+        });
 
-        async function loadPointsCustomers() {
-            const res = await fetch('/api/customers');
-            const customers = await res.json();
-            renderPointsCustomerList(customers.slice(0, 30));
-        }
+        function searchPointsCustomers() { pagerReset('pointsCustomers'); pagerLoad('pointsCustomers'); }
+        function loadPointsCustomers() { pagerLoad('pointsCustomers'); }
 
         function renderPointsCustomerList(customers) {
             const container = document.getElementById('pointsCustomerList');
@@ -396,24 +522,26 @@
             }
         }
 
-        async function searchCardCustomers() {
-            const keyword = document.getElementById('cardSearchInput').value;
-            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
-            const customers = await res.json();
-            for (let c of customers) {
-                c.total_cards = await getCustomerCardTotal(c.id);
+        setupPager('cardCustomers', {
+            controlsId: 'winecardCustomerPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) => {
+                const kw = (document.getElementById('cardSearchInput') || {}).value || '';
+                // 酒卡管理页按有效酒卡数量从高到低排序
+                return fetch(`/api/customers?page=${page}&page_size=${pageSize}&sort=cards_desc&keyword=${encodeURIComponent(kw)}`)
+                    .then(r => r.json());
+            },
+            render: async (items) => {
+                // 当前页客户并行获取酒卡总数，避免 N+1 串行等待
+                await Promise.all(items.map(async c => {
+                    c.total_cards = await getCustomerCardTotal(c.id);
+                }));
+                renderCardCustomerList(items);
             }
-            renderCardCustomerList(customers);
-        }
+        });
 
-        async function loadCardCustomers() {
-            const res = await fetch('/api/customers');
-            const customers = await res.json();
-            for (let c of customers.slice(0, 30)) {
-                c.total_cards = await getCustomerCardTotal(c.id);
-            }
-            renderCardCustomerList(customers.slice(0, 30));
-        }
+        function searchCardCustomers() { pagerReset('cardCustomers'); pagerLoad('cardCustomers'); }
+        function loadCardCustomers() { pagerLoad('cardCustomers'); }
 
         function renderCardCustomerList(customers) {
             const container = document.getElementById('winecardCustomerList');
@@ -575,24 +703,24 @@
             }
         }
 
-        async function searchStoredCustomers() {
-            const keyword = document.getElementById('storedSearchInput').value;
-            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
-            const customers = await res.json();
-            for (let c of customers) {
-                c.total_wines = await getCustomerWineTotal(c.id);
+        setupPager('storedCustomers', {
+            controlsId: 'storedwineCustomerPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) => {
+                const kw = (document.getElementById('storedSearchInput') || {}).value || '';
+                return fetch(`/api/customers?page=${page}&page_size=${pageSize}&keyword=${encodeURIComponent(kw)}`)
+                    .then(r => r.json());
+            },
+            render: async (items) => {
+                await Promise.all(items.map(async c => {
+                    c.total_wines = await getCustomerWineTotal(c.id);
+                }));
+                renderStoredCustomerList(items);
             }
-            renderStoredCustomerList(customers);
-        }
+        });
 
-        async function loadStoredCustomers() {
-            const res = await fetch('/api/customers');
-            const customers = await res.json();
-            for (let c of customers.slice(0, 30)) {
-                c.total_wines = await getCustomerWineTotal(c.id);
-            }
-            renderStoredCustomerList(customers.slice(0, 30));
-        }
+        function searchStoredCustomers() { pagerReset('storedCustomers'); pagerLoad('storedCustomers'); }
+        function loadStoredCustomers() { pagerLoad('storedCustomers'); }
 
         function renderStoredCustomerList(customers) {
             const container = document.getElementById('storedwineCustomerList');
@@ -721,18 +849,19 @@
         }
 
         // ========== 消费记录 ==========
-        async function searchConsumptionCustomers() {
-            const keyword = document.getElementById('consumptionSearchInput').value;
-            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
-            const customers = await res.json();
-            renderConsumptionCustomerList(customers);
-        }
+        setupPager('consumptionCustomers', {
+            controlsId: 'consumptionCustomerPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) => {
+                const kw = (document.getElementById('consumptionSearchInput') || {}).value || '';
+                return fetch(`/api/customers?page=${page}&page_size=${pageSize}&keyword=${encodeURIComponent(kw)}`)
+                    .then(r => r.json());
+            },
+            render: (items) => renderConsumptionCustomerList(items)
+        });
 
-        async function loadConsumptionCustomers() {
-            const res = await fetch('/api/customers');
-            const customers = await res.json();
-            renderConsumptionCustomerList(customers.slice(0, 30));
-        }
+        function searchConsumptionCustomers() { pagerReset('consumptionCustomers'); pagerLoad('consumptionCustomers'); }
+        function loadConsumptionCustomers() { pagerLoad('consumptionCustomers'); }
 
         function renderConsumptionCustomerList(customers) {
             const container = document.getElementById('consumptionCustomerList');
@@ -767,9 +896,17 @@
         }
 
         // ========== 酒水管理 ==========
-        async function loadWines() {
-            const res = await fetch('/api/wines');
-            const wines = await res.json();
+        setupPager('wines', {
+            controlsId: 'winePagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) =>
+                fetch(`/api/wines?page=${page}&page_size=${pageSize}`).then(r => r.json()),
+            render: (wines) => renderWineList(wines)
+        });
+
+        function loadWines() { pagerLoad('wines'); }
+
+        function renderWineList(wines) {
             const container = document.getElementById('wineList');
             if (!wines.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无酒水</div>'; return; }
             container.innerHTML = wines.map(w => `
@@ -817,9 +954,17 @@
             else alert('删除失败');
         }
 
-        async function loadRecords() {
-            const res = await fetch('/api/consumption_records');
-            const records = await res.json();
+        setupPager('records', {
+            controlsId: 'recordsPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) =>
+                fetch(`/api/consumption_records?page=${page}&page_size=${pageSize}`).then(r => r.json()),
+            render: (records) => renderRecordsList(records)
+        });
+
+        function loadRecords() { pagerLoad('records'); }
+
+        function renderRecordsList(records) {
             const container = document.getElementById('recordsList');
             if (!records.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无消费记录</div>'; return; }
             container.innerHTML = records.map(r => `
@@ -833,12 +978,19 @@
         }
 
         // ========== SNG管理 ==========
-        async function searchSNGCustomers() {
-            const keyword = document.getElementById('sngSearchInput').value;
-            const res = await fetch(`/api/customers?keyword=${encodeURIComponent(keyword)}`);
-            const customers = await res.json();
-            renderSNGCustomerList(customers);
-        }
+        setupPager('sngCustomers', {
+            controlsId: 'sngCustomerPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) => {
+                const kw = (document.getElementById('sngSearchInput') || {}).value || '';
+                return fetch(`/api/customers?page=${page}&page_size=${pageSize}&keyword=${encodeURIComponent(kw)}`)
+                    .then(r => r.json());
+            },
+            render: (items) => renderSNGCustomerList(items)
+        });
+
+        function searchSNGCustomers() { pagerReset('sngCustomers'); pagerLoad('sngCustomers'); }
+        function loadSNGCustomers() { pagerLoad('sngCustomers'); }
 
         function renderSNGCustomerList(customers) {
             const container = document.getElementById('sngCustomerList');
@@ -881,28 +1033,44 @@
         }
 
         // ========== 排行榜 ==========
-        async function loadPointsRanking() {
-            const res = await fetch('/api/rankings/points');
-            const rankings = await res.json();
+        setupPager('pointsRanking', {
+            controlsId: 'pointsRankingPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) =>
+                fetch(`/api/rankings/points?page=${page}&page_size=${pageSize}`).then(r => r.json()),
+            render: (items) => renderPointsRankingList(items)
+        });
+
+        function loadPointsRanking(page) { pagerLoad('pointsRanking', page); }
+
+        function renderPointsRankingList(items) {
             const container = document.getElementById('pointsRankingList');
-            if (!rankings.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无数据</div>'; return; }
-            container.innerHTML = `<div class="card">${rankings.slice(0, 20).map((r, idx) => `
+            if (!items.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无数据</div>'; return; }
+            container.innerHTML = `<div class="card">${items.map(r => `
                 <div class="ranking-row">
-                    <div class="ranking-rank">${idx + 1}</div>
+                    <div class="ranking-rank">${r.rank}</div>
                     <div class="ranking-name">${escapeHtml(r.name)} (${r.phone_tail})</div>
                     <div class="ranking-value">${r.points} 分</div>
                 </div>
             `).join('')}</div>`;
         }
 
-        async function loadSNGRanking() {
-            const res = await fetch('/api/rankings/sng');
-            const rankings = await res.json();
+        setupPager('sngRanking', {
+            controlsId: 'sngRankingPagination',
+            defaultPageSize: 20,
+            fetchPage: (page, pageSize) =>
+                fetch(`/api/rankings/sng?page=${page}&page_size=${pageSize}`).then(r => r.json()),
+            render: (items) => renderSNGRankingList(items)
+        });
+
+        function loadSNGRanking(page) { pagerLoad('sngRanking', page); }
+
+        function renderSNGRankingList(items) {
             const container = document.getElementById('sngRankingList');
-            if (!rankings.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无数据</div>'; return; }
-            container.innerHTML = `<div class="card">${rankings.slice(0, 20).map((r, idx) => `
+            if (!items.length) { container.innerHTML = '<div class="text-center" style="padding:40px; color:#999;">暂无数据</div>'; return; }
+            container.innerHTML = `<div class="card">${items.map(r => `
                 <div class="ranking-row">
-                    <div class="ranking-rank">${idx + 1}</div>
+                    <div class="ranking-rank">${r.rank}</div>
                     <div class="ranking-name">${escapeHtml(r.name)}</div>
                     <div class="sng-stats">
                         <span>🏆 ${r.champion_count}</span>
